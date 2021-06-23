@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/cheekybits/genny/out"
@@ -21,6 +22,10 @@ import (
 */
 
 const (
+	STDOUT = "stdout"
+)
+
+const (
 	_ = iota
 	exitcodeInvalidArgs
 	exitcodeInvalidTypeSet
@@ -31,11 +36,12 @@ const (
 	exitcodeDestFileFailed
 )
 
+
 func main() {
 	var (
 		in      = flag.String("in", "", "file to parse instead of stdin")
 		out     = flag.String("out", "", "file to save output to instead of stdout")
-		pkgName = flag.String("pkg", "", "package name for generated files")
+		pkgName = flag.String("pkg", "", "package name for generated files (if a filename is given for out, will default to basename of parent directory)")
 		genTag  = flag.String("tag", "", "build tag that is stripped from output")
 		prefix  = "https://github.com/metabition/gennylib/raw/master/"
 	)
@@ -65,7 +71,18 @@ func main() {
 	outWriter := newWriter(*out)
 	outputFilename := *out
 	if outputFilename == "" {
-		outputFilename = "stdout"
+		outputFilename = STDOUT
+	} else if *pkgName == "" {
+		destFile := filepath.Clean(outputFilename)
+		if !filepath.IsAbs(destFile) {
+			destFile, err = filepath.Abs(destFile)
+			if err != nil {
+				fatal(exitcodeDestFileFailed, err)
+			}
+		}
+		destDir := filepath.Dir(filepath.Clean(destFile))
+		dirname := filepath.Base(destDir)
+		pkgName = &dirname
 	}
 
 	if strings.ToLower(args[0]) == "get" {
@@ -82,6 +99,7 @@ func main() {
 		if err != nil {
 			fatal(exitcodeGetFailed, err)
 		}
+
 		r.Body.Close()
 		br := bytes.NewReader(b)
 		err = gen(*in, outputFilename, *pkgName, *genTag, br, typeSets, outWriter)
