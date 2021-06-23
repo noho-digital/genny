@@ -118,7 +118,7 @@ Given [this generic Go code](https://github.com/cheekybits/genny/tree/master/exa
 ```go
 package queue
 
-import "github.com/cheekybits/genny/generic"
+import "github.com/noho-digital/genny/generic"
 
 // NOTE: this is how easy it is to define a generic type
 type Something generic.Type
